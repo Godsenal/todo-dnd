@@ -3,13 +3,25 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@types/jest": "^24.0.15",
+    "@types/lodash": "^4.14.136",
+    "@types/node": "^12.6.1",
+    "@types/react": "^16.8.23",
+    "@types/react-beautiful-dnd": "^11.0.2",
+    "@types/react-dom": "^16.8.4",
+    "@types/uuid": "^3.4.5",
+    "lodash": "^4.17.11",
     "react": "^16.8.6",
+    "react-beautiful-dnd": "^11.0.4",
     "react-dom": "^16.8.6",
-    "react-scripts": "3.0.1"
+    "react-scripts": "3.0.1",
+    "typescript": "^3.5.3",
+    "uuid": "^3.3.2"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "tailwind:css": "tailwind build src/styles/tailwind.css -o src/styles/tailwind.css",
+    "start": "npm run tailwind:css && react-scripts start",
+    "build": "npm run tailwind:css && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -27,5 +39,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "tailwindcss": "^1.0.4"
   }
 }
