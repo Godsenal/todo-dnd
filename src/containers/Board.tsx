@@ -6,8 +6,14 @@ import { reorder, move } from '../utils/dnd';
 import List from './List';
 import EditInput from './EditInput';
 
+/* Card Handler */
 export type AddCard = (listId: ICard['listId'], name: ICard['name']) => void;
+export type UpdateCard = (listId: ICard['listId'], cardId: ICard['id'], card: Partial<ICard>) => void;
+
+/* CardList Handler */
+export type AddCardList = (name: ICard['name']) => void;
 export type RemoveCardList = (listId: ICard['listId']) => void;
+export type UpdateCardList = (listId: ICard['listId'], cardList: Partial<ICardList>) => void;
 
 let prevWidth = 0;
 
@@ -39,7 +45,7 @@ const Board = () => {
         return {
           ...prev,
           [source.droppableId]: sResult,
-          [destination.droppableId]: dResult,
+          [destination.droppableId]: dResult.map(item => ({ ...item, listId: destination.droppableId })),
         }
       })
     }
@@ -56,11 +62,24 @@ const Board = () => {
       [listId]: prev[listId] ? [...prev[listId], card] : [card],
     }));
   }, []);
-  const addCardList = useCallback((name: string) => {
+  const updateCard: UpdateCard = useCallback((listId, cardId, card) => {
+    setCards(prev => ({
+      ...prev,
+      [listId]: prev[listId] ? prev[listId].map(prevCard => prevCard.id === cardId ? { ...prevCard, ...card } : prevCard) : prev[listId],
+    }))
+  }, []);
+  const addCardList: AddCardList = useCallback((name) => {
     setCardLists(prev => ([...prev, { id: uuid(), name }]));
   }, []);
   const removeCardList: RemoveCardList = useCallback(listId => {
     setCardLists(prev => prev.filter(list => list.id !== listId));
+    setCards(prev => ({
+      ...prev,
+      [listId]: [],
+    }));
+  }, []);
+  const updateCardList: UpdateCardList = useCallback((listId, cardList) => {
+    setCardLists(prev => prev.map(list => list.id === listId ? { ...list, ...cardList } : list));
   }, []);
   // 추가시 오른쪽으로 스크롤
   useEffect(() => {
@@ -73,7 +92,7 @@ const Board = () => {
     }
   }, [cardLists]);
   return (
-    <div ref={containerRef} className="w-full h-full overflow-x-auto whitespace-no-wrap">
+    <div ref={containerRef} className="bg-teal-300 w-full h-full py-3 overflow-x-auto whitespace-no-wrap">
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="board" type="CARDLIST" direction="horizontal">
           {
@@ -81,7 +100,16 @@ const Board = () => {
               <div ref={innerRef} className="inline-block" {...droppableProps}>
                 {
                   cardLists.map((cardList, index) => (
-                    <List key={cardList.id} {...cardList} index={index} cards={cards[cardList.id] || []} addCard={addCard} removeCardList={removeCardList} />
+                    <List
+                      key={cardList.id}
+                      {...cardList}
+                      index={index}
+                      cards={cards[cardList.id] || []}
+                      addCard={addCard}
+                      removeCardList={removeCardList}
+                      updateCard={updateCard}
+                      updateCardList={updateCardList}
+                    />
                   ))
                 }
                 {placeholder}
