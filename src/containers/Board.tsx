@@ -9,7 +9,8 @@ import { ICardList, ICard } from "../models/card";
 import { reorder, move } from "../utils/dnd";
 import List from "./List";
 import EditInput from "./EditInput";
-import worker from '../workers/tododata';
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import Worker from 'worker-loader!../workers/data.worker.js';
 
 /* Card Handler */
 export type AddCard = (listId: ICard["listId"], name: ICard["name"]) => void;
@@ -28,9 +29,7 @@ export type UpdateCardList = (
 ) => void;
 
 let prevWidth = 0;
-const code = worker.toString();
-const blob = new Blob(['(' + code + ')()']);
-const todoworker = new Worker(URL.createObjectURL(blob));
+const todoworker = new Worker();
 const STORAGE = 'tododata';
 
 const Board = () => {
