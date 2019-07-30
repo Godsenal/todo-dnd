@@ -9,6 +9,7 @@ import { ICardList, ICard } from "../models/card";
 import { reorder, move } from "../utils/dnd";
 import List from "./List";
 import EditInput from "./EditInput";
+import worker from '../workers/tododata';
 
 /* Card Handler */
 export type AddCard = (listId: ICard["listId"], name: ICard["name"]) => void;
@@ -27,11 +28,17 @@ export type UpdateCardList = (
 ) => void;
 
 let prevWidth = 0;
+const code = worker.toString();
+const blob = new Blob(['(' + code + ')()']);
+const todoworker = new Worker(URL.createObjectURL(blob));
+const STORAGE = 'tododata';
 
 const Board = () => {
+  const [isLoading, setIsLoading] = useState(true);
   const [cardLists, setCardLists] = useState<ICardList[]>([
-    { id: "1", name: "a" },
-    { id: "2", name: "b" }
+    { id: "1", name: "To Do" },
+    { id: "2", name: "Doing" },
+    { id: "3", name: "Done" },
   ]);
   const [cards, setCards] = useState<{ [listId: string]: ICard[] }>({});
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -100,8 +107,8 @@ const Board = () => {
       ...prev,
       [listId]: prev[listId]
         ? prev[listId].map(prevCard =>
-            prevCard.id === cardId ? { ...prevCard, ...card } : prevCard
-          )
+          prevCard.id === cardId ? { ...prevCard, ...card } : prevCard
+        )
         : prev[listId]
     }));
   }, []);
@@ -130,11 +137,51 @@ const Board = () => {
       }
     }
   }, [cardLists]);
+  // check initial Data
+  useEffect(() => {
+    const data = localStorage.getItem(STORAGE);
+    if (data) {
+      return todoworker.postMessage(['PARSE_TODOS', data]);
+    }
+    return setIsLoading(false);
+  }, []);
+  // set worker for JSON
+  useEffect(() => {
+    todoworker.addEventListener('message', (e) => {
+      const [type, data] = e.data;
+      switch (type) {
+        case 'PARSED_TODOS': {
+          const { cards, cardLists } = data;
+          setCardLists(cardLists);
+          setCards(cards);
+          setIsLoading(false);
+          break;
+        }
+        case 'STRINGIFIED_TODOS': {
+          localStorage.setItem(STORAGE, data);
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+    });
+  }, []);
+  // update localstorage carddata
+  useEffect(() => {
+    todoworker.postMessage(['STRINGIFY_TODOS', { cards, cardLists }]);
+  }, [cardLists, cards]);
   return (
     <div
       ref={containerRef}
       className="bg-teal-300 w-full h-full py-3 overflow-x-auto whitespace-no-wrap"
     >
+      <div
+        className="flex fixed justify-center items-center z-10 px-5 py-2 bg-white rounded"
+        style={{ right: 20, bottom: 10 }}
+      >
+        <div className="text-gray-800">{isLoading ? 'checking saved data...' : 'Up to date'}</div>
+      </div>
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="board" type="CARDLIST" direction="horizontal">
           {({ innerRef, droppableProps, placeholder }) => (
